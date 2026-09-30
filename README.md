@@ -77,6 +77,35 @@ Regexp::Parser.parse(
 )
 ```
 
+### Counting and Ranking Matches
+
+For a finite, ordered alphabet, `FiniteLanguage` counts complete strings of up
+to a given length and ranks them in shortlex order (length first, then the
+order of the supplied alphabet). Overlapping alternatives are counted once, and
+all counts are arbitrary precision integers. Backreferences, recursion,
+lookaround, anchors and other non-regular features are rejected.
+
+```ruby
+alphabet = %w[a b c]
+language = Regexp::Parser::FiniteLanguage.new('a|ab|abc', alphabet, 3)
+
+language.count
+language.to_a
+language.rank('ab')
+language.unrank(2)
+language.sample(Random.new(123))
+language.sample(random: Random.new(123))
+```
+
+Convenience methods are available on `Regexp::Parser`:
+
+```ruby
+Regexp::Parser.count(pattern, alphabet, max_length)
+Regexp::Parser.rank(pattern, alphabet, string)
+Regexp::Parser.unrank(pattern, alphabet, max_length, rank)
+Regexp::Parser.sample(pattern, alphabet, max_length, Random.new(123))
+```
+
 ## Components
 
 ### Scanner

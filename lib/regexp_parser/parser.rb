@@ -24,6 +24,23 @@ class Regexp::Parser
     new.parse(input, syntax, options: options, &block)
   end
 
+  def self.count(input, alphabet, max_length, syntax = nil)
+    FiniteLanguage.new(parse(input, syntax), alphabet, max_length).count
+  end
+
+  def self.rank(input, alphabet, string, syntax = nil)
+    FiniteLanguage.new(parse(input, syntax), alphabet, string.length).rank(string)
+  end
+
+  def self.unrank(input, alphabet, max_length, rank, syntax = nil)
+    FiniteLanguage.new(parse(input, syntax), alphabet, max_length).unrank(rank)
+  end
+
+  def self.sample(input, alphabet, max_length, random = nil, syntax: nil, **options)
+    random_source = options.key?(:random) ? options.fetch(:random) : random
+    FiniteLanguage.new(parse(input, syntax), alphabet, max_length).sample(random_source)
+  end
+
   def parse(input, syntax = nil, options: nil, &block)
     root = Root.construct(options: extract_options(input, options))
 
