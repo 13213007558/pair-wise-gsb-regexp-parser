@@ -318,6 +318,37 @@ end
 _See the traverse.rb and strfregexp.rb files under `lib/regexp_parser/expression/methods`
 for more information on these methods._
 
+### Enumeration
+
+Counts, ranks, un-ranks, and uniformly samples the *distinct* strings over a
+finite, ordered alphabet that a pattern matches as a whole (like
+`/\A(?:pattern)\z/`) within a given length bound. This is useful e.g. for
+generating test data.
+
+Only a plain regular subset is supported: literals, escapes, character
+sets/types, unicode properties, alternation, groups, and quantifiers of any
+mode. Backreferences, subexpression calls and recursion, lookaround,
+conditionals, atomic groups, the absence operator, `\K`, context-dependent
+anchors (`\b`, `\B`, `\G`, `\Z`), and variable-length atoms (`\R`, `\X`)
+are rejected with `UnsupportedExpressionError`. The anchors `^`, `$`, `\A`
+and `\z` are accepted as no-ops since matching is always anchored.
+
+Strings are ordered by length first, then by the alphabet's order. Each
+distinct string is counted exactly once, no matter how many alternatives
+match it, and all counts are arbitrary-precision Integers.
+
+#### Example
+
+```ruby
+enum = Regexp::Parser::Enumeration.new('(ab|a)c?', alphabet: %w[a b c], max_length: 3)
+
+enum.count                    # => 4
+enum.unrank(3)                # => "abc"
+enum.rank('abc')              # => 3
+enum.include?('ab')           # => true
+enum.sample(random: Random.new(42)) # => uniformly random distinct string
+```
+
 ## Supported Syntax
 
 The three modules support all the regular expression syntax features of Ruby 1.8,

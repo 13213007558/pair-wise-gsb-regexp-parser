@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- added `Regexp::Parser::Enumeration`, which counts, ranks, un-ranks, and
+  uniformly samples the distinct strings over a given finite alphabet that a
+  pattern matches within a given length bound
+  * supports a plain regular subset; backreferences, recursion, lookaround,
+    and other non-regular or variable-length constructs are rejected
+  * overlapping alternatives are deduplicated, counts are arbitrary-precision
+    Integers, and sampling takes an explicit random source
+
 ## [2.13.1] - 2026-09-28 - Janosch Müller
 
 ### Fixed
