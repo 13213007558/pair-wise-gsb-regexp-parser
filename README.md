@@ -318,6 +318,50 @@ end
 _See the traverse.rb and strfregexp.rb files under `lib/regexp_parser/expression/methods`
 for more information on these methods._
 
+### Matcher
+
+`Regexp::Matcher` is a restricted, AST-based backtracking matcher. Unlike
+Ruby's `MatchData`, which only keeps the *last* value of a repeatedly
+entered capture group, it records the full history of every capture group
+along the successful match path. Captures made on branches that are later
+abandoned during backtracking are rolled back and do not appear in the
+result.
+
+#### Example
+
+```ruby
+matcher = Regexp::Matcher.new('(a(b)?)+')
+match = matcher.match('abab')
+
+match.to_a        # => ["abab", "ab", "b"] (whole match + final captures)
+match.begin(0)    # => 0
+match.end(0)      # => 4
+match.history(1)  # => [[0, 2], [2, 4]] (all enter/exit spans of group 1)
+match.history(2)  # => [[1, 2], [3, 4]]
+match.histories   # => {1 => [[0, 2], [2, 4]], 2 => [[1, 2], [3, 4]]}
+```
+
+#### Notes
+
+  * Only a subset of Ruby's regexp syntax is supported: literals, character
+    sets (literals, ranges, negation), concatenation, alternation, greedy
+    and lazy quantifiers, the anchors `^`, `$`, `\A`, `\z`,
+    `\Z`, and plain capture groups (as well as non-capturing groups).
+    Anything else - lookarounds, backreferences, atomic groups, possessive
+    quantifiers, escape sequences, character types like `\d` and `.`,
+    and so on - is rejected with `Regexp::Matcher::UnsupportedError`
+    when the matcher is built, before any matching is attempted.
+
+  * All offsets returned by the matcher are *character* offsets (not byte
+    offsets), counted from the start of the searched string.
+
+  * Known difference: Ruby's engine propagates an "empty status" between
+    nested repetitions, so when certain quantified capture groups match the
+    empty string, enclosing repetitions stop iterating early (e.g.
+    `/((a|b)(y+|){1,2})+/` matches only `"a"` on `"ab"`). That behavior
+    is not replicated; the matcher only applies the direct empty-iteration
+    rule and may return a longer overall match for such patterns.
+
 ## Supported Syntax
 
 The three modules support all the regular expression syntax features of Ruby 1.8,
