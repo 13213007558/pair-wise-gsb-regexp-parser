@@ -53,6 +53,24 @@ Regexp::Lexer.lex(regexp)
 Regexp::Parser.parse(regexp)
 ```
 
+`Parser.literal_requirement` analyzes a regular expression and returns a
+conservative pre-filter condition. If the condition rejects a String, the
+original Regexp cannot match it. This is useful for running many expensive
+patterns against the same input after a cheap literal-substring check.
+
+```ruby
+requirement = Regexp::Parser.literal_requirement(/foo(?:bar|baz)/)
+
+requirement.match?('a foobar message') # => true
+requirement.match?('unrelated input')   # => false
+```
+
+The returned expression can be a literal requirement, an AND of conditions,
+or an OR of conditions. Optional parts, empty alternatives, negative
+assertions, and other syntax for which no safe requirement can be proven
+return a condition that accepts every String. The analysis honors scoped
+case-insensitive options and UTF-8/US-ASCII/ASCII-8BIT literal encodings.
+
 All three methods accept a block as the last argument, which, if given, gets
 called with the results as follows:
 
