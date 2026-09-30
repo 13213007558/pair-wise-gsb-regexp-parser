@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- added Regexp::RequiredLiterals, an analysis interface that derives a
+  condition over literal fragments which must occur in any matching string
+  * supports combining fragments with AND/OR, common-prefix factoring, local
+    option switches, and inputs in any encoding
+  * falls back to an unconditional pass when no requirement can be derived
+
 ## [2.13.1] - 2026-09-28 - Janosch Müller
 
 ### Fixed

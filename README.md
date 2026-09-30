@@ -72,10 +72,39 @@ All three methods accept either a `Regexp` or `String` (containing the pattern)
 require 'regexp_parser'
 
 Regexp::Parser.parse(
-  "a+ # Recognizes a and A...",
+  "a+ # Recognizes a and A...",
   options: ::Regexp::EXTENDED | ::Regexp::IGNORECASE
 )
 ```
+
+## Required literal analysis
+
+**RequiredLiterals** derives a condition over literal fragments that must
+occur in any string a regular expression can match. When many expressions
+are tested against many inputs, this allows cheaply rejecting inputs that
+cannot possibly match before running the full expression:
+
+```ruby
+require 'regexp_parser'
+
+condition = Regexp::RequiredLiterals.analyze(/foo(bar|baz)\d+qux/)
+condition.to_s # => '"foo" AND ("bar" OR "baz") AND "qux"'
+
+condition.match?('xxfoobaryyqux') # => true  (candidate, run the regexp)
+condition.match?('xxfooyyqux')    # => false (rejected, skip the regexp)
+```
+
+The derivation is conservative and never produces false negatives:
+
+* Optional branches and alternations are combined with OR; only fragments
+  required on *every* path are required overall.
+* Contents of negative assertions like `(?!...)` and `(?<!...)` never
+  become requirements - text in the source is not necessarily required in
+  the input.
+* Local option switches (`(?i)`, `(?i:...)`) are honored; insensitive
+  fragments are matched with Ruby's own case-folding semantics.
+* Inputs in any encoding can be tested; unanalyzable constructs (character
+  sets, backreferences, ...) degrade to an unconditional pass.
 
 ## Components
 
