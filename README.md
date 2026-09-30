@@ -318,6 +318,41 @@ end
 _See the traverse.rb and strfregexp.rb files under `lib/regexp_parser/expression/methods`
 for more information on these methods._
 
+### Matcher
+
+`Regexp::Matcher` is a restricted, backtracking matcher that runs directly on
+the parsed expression tree. Unlike Ruby's `MatchData`, which only keeps the
+*last* span of a repeated capture group, it additionally records every
+enter/exit span of every capture group along the successful path.
+
+Only a subset of syntax is supported; anything else raises
+`Regexp::Matcher::UnsupportedError` before matching:
+
+- literals, character sets (literal and range members only)
+- concatenation and alternation
+- greedy and reluctant quantifiers (possessive ones are rejected)
+- anchors: `^`, `$`, `\A`, `\z`, `\Z`, `\b`, `\B`, `\G`
+- plain capture groups and non-capturing groups
+
+Matching searches left to right (like `Regexp#match`), greedy quantifiers
+prefer more iterations and reluctant ones fewer, and captures made on
+branches that are abandoned through backtracking are rolled back.
+**All reported positions are character offsets** (not byte offsets), with
+exclusive end offsets, consistent with `MatchData#begin`/#`end`.
+
+#### Example
+
+```ruby
+m = Regexp::Matcher.new('(a)+a').match('aaa')
+
+m.matched      # => "aaa"
+m.range        # => 0...3   (character offsets, end-exclusive)
+m.captures     # => ["a"]   (final captures, like MatchData#captures)
+m.history(1)   # => [0...1, 1...2] (every span of group 1 on the
+               #     successful path; the backtracked 3rd iteration
+               #     of the greedy + does not appear)
+```
+
 ## Supported Syntax
 
 The three modules support all the regular expression syntax features of Ruby 1.8,
