@@ -6,3 +6,8 @@ require_relative 'regexp_parser/scanner'
 require_relative 'regexp_parser/syntax'
 require_relative 'regexp_parser/lexer'
 require_relative 'regexp_parser/parser'
+
+class Regexp::Parser
+  autoload :BacktrackingInterpreter,    'regexp_parser/backtracking_interpreter'
+  autoload :BacktrackingStaticAnalyzer, 'regexp_parser/backtracking_static_analyzer'
+end
