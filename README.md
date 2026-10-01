@@ -77,6 +77,24 @@ Regexp::Parser.parse(
 )
 ```
 
+### Backtracking analysis
+
+`Regexp::BacktrackingAnalysis.analyze` statically inspects a parsed AST for
+ambiguous repetitions that can cause polynomial or exponential backtracking.
+The supported subset excludes backreferences, recursive calls, and conditional
+groups; patterns outside the analyzed subset return `:unknown` rather than a
+general safety claim.
+
+```ruby
+result = Regexp::BacktrackingAnalysis.analyze('(a*)*z')
+result.status                  # => :vulnerable
+finding = result.findings.first
+finding.severity              # => :exponential
+finding.locations.map(&:ts)   # => [0, 1]
+finding.witness.to_a          # => ["prefix", "repeatable", "failing suffix"]
+finding.trend.step_counts     # counts from a small naive backtracker
+```
+
 ## Components
 
 ### Scanner
