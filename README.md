@@ -318,6 +318,50 @@ end
 _See the traverse.rb and strfregexp.rb files under `lib/regexp_parser/expression/methods`
 for more information on these methods._
 
+### Required Literal Prefilters
+
+For cheap log scanning, derive a string-based necessary condition from the AST
+before running a Regexp. The returned condition is conservative: every string
+matched by the Regexp matches the condition, but it may also allow additional
+candidates through to the full Regexp check.
+
+```ruby
+condition = Regexp::RequiredLiteral.of('(?:alpha|beta).*end')
+condition.class
+# => Regexp::RequiredLiteral::And
+
+condition.conditions.first
+# => or(include("alpha"), include("beta"))
+
+condition.conditions.last
+# => include("end")
+
+condition.match?('beta to the end') # => true
+condition.match?('gamma end')      # => false
+```
+
+Conditions are trees of `and`, `or`, and literal `include?` checks. Every node
+exposes the source range `[starts_at, ends_at)` of the expression from which it
+was derived. Literals also indicate whether they were derived under a local
+ignorecase option.
+
+Optional branches, zero-allowed quantifiers, backreferences, character classes,
+properties, and other structures that do not guarantee a particular substring
+are treated locally as `true`; they do not invalidate reliable literals found
+elsewhere in the pattern. If no sound condition exists, the whole result is a
+tautology:
+
+```ruby
+Regexp::RequiredLiteral.of(/ff/i).always?  # => true
+```
+
+Use `min_literal_length` to suppress short literals and `max_complexity` to cap
+the size of the resulting condition tree:
+
+```ruby
+Regexp::RequiredLiteral.of('abc|de', min_literal_length: 3).always? # => true
+```
+
 ## Supported Syntax
 
 The three modules support all the regular expression syntax features of Ruby 1.8,
