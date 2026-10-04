@@ -318,6 +318,46 @@ end
 _See the traverse.rb and strfregexp.rb files under `lib/regexp_parser/expression/methods`
 for more information on these methods._
 
+### Backtracking Analyzer
+
+`Regexp::BacktrackingAnalyzer` performs a conservative structural check for
+repetitions that can admit exponentially many ways to partition a growing
+input before a suffix fails. It does not use the presence of nested
+quantifiers by itself; it checks the overlap of repeated branches, whether a
+following suffix necessarily fails, and whether an atomic group or
+possessive quantifier removes the relevant save point.
+
+```ruby
+require 'regexp_parser'
+
+result = Regexp::BacktrackingAnalyzer.analyze(/x(?:a|aa)+!/)
+result.status       # => :risk_found
+risk = result.risks.first
+risk.range          # => [1, 9] (start offset and length in the source)
+risk.suffix_range   # => [10, 1]
+risk.witness.prefix       # => "x"
+risk.witness.repeatable   # => "a"
+risk.witness.suffix       # => "!"
+risk.witness.example(12)  # => "xaaaaaaaaaa!"
+risk.reason
+```
+
+The possible statuses are:
+
+* `:risk_found` — a pumpable ambiguity and rejecting suffix were proven.
+* `:no_risk_found` — no risk was found by the supported conservative proof.
+  This means “not found”, not a general proof that the pattern can never be
+  slow.
+* `:unanalyzable` — the pattern uses features outside the proof, so the result
+  must not be presented as safe.
+
+`#verify_witness!` is an auxiliary runtime check. It evaluates a few small
+members of the constructed witness family under a short timeout. Detection and
+the growth argument are based on the AST; callers should not wait for a long
+match to hang before deciding that a pattern is risky. Native regexp matching
+does not always reach a timeout check point immediately, so keep the inputs
+small and treat this method only as a sanity check.
+
 ## Supported Syntax
 
 The three modules support all the regular expression syntax features of Ruby 1.8,
