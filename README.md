@@ -77,6 +77,58 @@ Regexp::Parser.parse(
 )
 ```
 
+### Backtracking analysis (potential ReDoS)
+
+Before saving a regular expression, you can check it for patterns that can
+trigger catastrophic backtracking. The analyzer reasons about the AST rather
+than just counting nested stars - it models overlapping alternatives, a
+suffix that inevitably fails, and the truncating effect of atomic groups and
+possessive quantifiers.
+
+```ruby
+require 'regexp_parser'
+
+report = RegexpParser::Backtracking.analyze('(a|aa)*b')
+report.verdict          # => :risk
+finding = report.findings.first
+finding.kind           # => :overlapping_alternatives
+finding.range          # => 0...7  (AST range of the quantified expression)
+finding.witness.prefix # => ""
+finding.witness.pump   # => "a"
+finding.witness.suffix # => "b"
+finding.witness.inputs # => ["aaaaaaaaaaaab", ...] (grows with length)
+finding.reason         # derivation explanation
+```
+
+Each finding reports the concrete AST range responsible for the risk and a
+family of inputs that grows with the pump length, made of a fixed `prefix`,
+a repeatable `pump` fragment, and a failing `suffix`, together with the
+derivation reason. Optional auxiliary verification runs only small inputs
+under a strict per-match timeout and records the measurements; it never
+infers risk from a single long hang. Some engines linearize these patterns,
+in which case the report still relies on the static proof and says so.
+
+Three verdicts are distinguished and must not be conflated in a UI:
+
+* `:risk` - a concrete witness was derived from the AST.
+* `:no_risk_found` - no provable witness was found. This is **not** a proof
+  of safety.
+* `:unanalyzable` - the pattern uses constructs the analyzer does not model
+  (backreferences, lookarounds, conditionals, absence groups, ...). This is
+  never displayed as "safe". A proven risk together with such a limitation is
+  still reported as `:risk`, with the limitation listed separately.
+
+Near-identical patterns are distinguished, for example:
+
+```ruby
+RegexpParser::Backtracking.analyze('(a|aa)*b',    verify: false).verdict
+  # => :risk
+RegexpParser::Backtracking.analyze('(?>a|aa)*b', verify: false).verdict
+  # => :no_risk_found  (atomic group truncates the ambiguity)
+RegexpParser::Backtracking.analyze('(a+)++b',    verify: false).verdict
+  # => :no_risk_found  (possessive quantifier truncates the ambiguity)
+```
+
 ## Components
 
 ### Scanner
