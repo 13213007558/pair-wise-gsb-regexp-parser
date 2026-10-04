@@ -318,6 +318,29 @@ end
 _See the traverse.rb and strfregexp.rb files under `lib/regexp_parser/expression/methods`
 for more information on these methods._
 
+### Prefilter
+
+`Regexp::Prefilter.derive` builds a "required literal" condition from a
+pattern. The condition is a conservative AND/OR tree of string literals and
+is guaranteed to accept every text that the original expression matches, so
+it can cheaply reject non-matching texts (e.g. when scanning logs) before
+running the full regular expression:
+
+```ruby
+condition = Regexp::Prefilter.derive(/(?:alpha|beta).*end/)
+condition.to_s # => '("alpha" | "beta") & "end"'
+condition.match?('xxalphayyendzz') # => true
+condition.match?('alpha')          # => false
+condition.source_range # => 3...19 (offsets in the pattern source)
+```
+
+Optional parts, zero-width constructs, backreferences, and anything else
+that can not be guaranteed degrade to a tautology that accepts everything,
+so matching texts are never rejected. Case-insensitive parts (e.g. from
+`/i` or `(?i:...)`) yield case-insensitive literals. Two options control
+the result: `min_length:` drops literals shorter than the given length, and
+`max_literals:` collapses overly complex conditions to a tautology.
+
 ## Supported Syntax
 
 The three modules support all the regular expression syntax features of Ruby 1.8,
