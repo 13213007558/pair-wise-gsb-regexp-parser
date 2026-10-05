@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `Regexp::Parser.includes?` and `Regexp::Parser.equivalent?` for proving
+  language inclusion and equivalence of two patterns over a specified finite
+  character alphabet
+  * disproved checks return the shortest, lexicographically smallest
+    counterexample together with the direction (`:left_to_right` or
+    `:right_to_left`) and the accepting/rejecting side
+  * supported subset: character sets, concatenation, alternation, groups,
+    quantifiers, and the `\A \G ^ $ \Z \z` anchors, with correct local
+    `i`/`m` option semantics
+  * backreferences, recursive calls, assertions and other unsupported
+    features produce an `unknown` result instead of an approximation
+
 ## [2.13.1] - 2026-09-28 - Janosch Müller
 
 ### Fixed

@@ -318,6 +318,28 @@ end
 _See the traverse.rb and strfregexp.rb files under `lib/regexp_parser/expression/methods`
 for more information on these methods._
 
+## Language Inclusion and Equivalence
+
+When revising interface parameter rules you can prove whether a new pattern's
+language tightened an old one over an explicit, finite character alphabet:
+
+```ruby
+result = Regexp::Parser.includes?(/[ab]+/, /a+/, %w[a b])
+result.status            # => :not_included
+result.counterexample    # => "b" (shortest, lexicographically smallest)
+result.direction         # => :left_to_right
+result.accepted_by       # => :left
+result.rejected_by       # => :right
+
+Regexp::Parser.equivalent?(/a|b/, /[ab]/, %w[a b c]).status  # => :equivalent
+```
+
+Results are always one of `:included`, `:not_included`, `:equivalent` or
+`:unknown`. A counterexample is independently verified against Ruby itself,
+so a returned string is genuinely accepted by one side and rejected by the
+other. Backreferences, recursive calls, assertions and other constructs
+outside the supported subset yield `:unknown` rather than a guessed answer.
+
 ## Supported Syntax
 
 The three modules support all the regular expression syntax features of Ruby 1.8,
