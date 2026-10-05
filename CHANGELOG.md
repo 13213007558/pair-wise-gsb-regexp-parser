@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- added `Regexp::LengthAnalysis`: bounded length analysis that reports the
+  feasible combinations of total match length and capture group lengths,
+  keeping backreference lengths correlated with their targets. Limited to
+  fixed-width terminals and bounded quantifiers; unsupported structures
+  (unbounded quantifiers, subexp calls, lookarounds, conditionals, absence
+  groups) raise `NotAnalyzable`, and exceeding the state cap raises
+  `StateLimitExceeded`
+
 ## [2.13.1] - 2026-09-28 - Janosch Müller
 
 ### Fixed
