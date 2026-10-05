@@ -318,6 +318,28 @@ end
 _See the traverse.rb and strfregexp.rb files under `lib/regexp_parser/expression/methods`
 for more information on these methods._
 
+#### Bounded Match Lengths
+
+For bounded patterns, `Regexp::BoundedMatchLength.of` performs an exact length
+analysis instead of only returning an independent minimum and maximum. It
+reports every feasible total length together with feasible capture-length
+tuples, so repeated references to the same capture remain correlated.
+
+```ruby
+analysis = Regexp::BoundedMatchLength.of(/(a{1,3})\1/)
+analysis.lengths       # => [2, 4, 6]
+analysis.combinations  # => [[2, [1]], [4, [2]], [6, [3]]]
+```
+
+The first version supports fixed-width atoms, alternation, bounded
+quantifiers, numbered and named backreferences, and captures that are skipped
+or repeated. Backreferences to a repeated capture use the length captured by
+the last repetition. Unbounded quantifiers, assertions, absence groups,
+conditionals, subexpression calls, recursion, variable-width grapheme/linebreak
+tokens, and patterns that exceed the configured number of states raise an
+error rather than returning a potentially misleading range. The default limit
+is 10,000 concurrent states and can be changed with `state_limit:`.
+
 ## Supported Syntax
 
 The three modules support all the regular expression syntax features of Ruby 1.8,

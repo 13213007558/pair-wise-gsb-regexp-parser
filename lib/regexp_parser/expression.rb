@@ -27,6 +27,7 @@ require_relative 'expression/classes/root'
 require_relative 'expression/classes/unicode_property'
 
 require_relative 'expression/methods/construct'
+require_relative 'expression/methods/bounded_match_length'
 require_relative 'expression/methods/escape_sequence_char'
 require_relative 'expression/methods/escape_sequence_codepoint'
 require_relative 'expression/methods/human_name'

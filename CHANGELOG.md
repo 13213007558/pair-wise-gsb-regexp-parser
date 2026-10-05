@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `Regexp::BoundedMatchLength` for exact bounded match-length analysis
+  * reports feasible total lengths and capture-length combinations
+  * correlates numbered and named backreferences, including repeated captures
+  * explicitly rejects unsupported features and patterns exceeding the state limit
+
 ## [2.13.1] - 2026-09-28 - Janosch Müller
 
 ### Fixed
