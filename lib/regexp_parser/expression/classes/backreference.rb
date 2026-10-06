@@ -5,7 +5,7 @@ module Regexp::Expression
     class Base < Regexp::Expression::Base; end
 
     class Number < Backreference::Base
-      attr_reader :number
+      attr_accessor :number, :composition_target
       alias reference number
 
       def initialize(token, options = {})
@@ -15,7 +15,7 @@ module Regexp::Expression
     end
 
     class Name < Backreference::Base
-      attr_reader :name
+      attr_accessor :name, :composition_target
       alias reference name
 
       def initialize(token, options = {})
@@ -43,12 +43,19 @@ module Regexp::Expression
     end
 
     class NameRecursionLevel < Backreference::Name
-      attr_reader :recursion_level
+      attr_accessor :recursion_level, :recursion_level_sign
+
+      def initialize_copy(orig)
+        self.recursion_level = orig.recursion_level
+        self.recursion_level_sign = orig.recursion_level_sign.dup
+        super
+      end
 
       def initialize(token, options = {})
         super
         @name, recursion_level = token.text[3..-2].split(/(?=[+-])/)
-        @recursion_level = recursion_level.to_i
+        @recursion_level_sign = recursion_level[0]
+        @recursion_level = recursion_level[1..-1].to_i
       end
     end
   end

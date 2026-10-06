@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- structured AST composition with capture renumbering and reference rewriting
+  * supports concatenation, alternation, repetition, and explicit capture wrapping
+  * rewrites numeric, relative, named, recursion-level, conditional, and
+    subexpression-call references
+  * provides explicit name-conflict policies and old-to-new capture mappings
+
 ## [2.13.1] - 2026-09-28 - Janosch Müller
 
 ### Fixed

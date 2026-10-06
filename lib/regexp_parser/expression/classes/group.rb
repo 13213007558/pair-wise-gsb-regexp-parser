@@ -40,13 +40,24 @@ module Regexp::Expression
     end
 
     class Capture < Group::Base
-      attr_accessor :number, :number_at_level
+      attr_accessor :number, :number_at_level,
+                    :composition_source, :composition_path,
+                    :composition_synthetic
       alias identifier number
     end
 
     class Named < Group::Capture
       attr_reader :name
       alias identifier name
+
+      def name=(name)
+        @name = name
+        if text.include?("'")
+          self.text = "(?'#{name}'"
+        else
+          self.text = "(?<#{name}>"
+        end
+      end
 
       def initialize(token, options = {})
         @name = token.text[3..-2]

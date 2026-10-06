@@ -318,6 +318,31 @@ end
 _See the traverse.rb and strfregexp.rb files under `lib/regexp_parser/expression/methods`
 for more information on these methods._
 
+#### Structured Composition
+
+Capturing groups can be combined structurally instead of concatenating source
+strings. The composer clones every operand, then renumbers its captures and
+rewrites numeric, relative, named, recursion-level, conditional, and
+subexpression references inside the clone.
+
+```ruby
+first  = Regexp::Parser.parse(/(?<word>\w+)\k<word>/)
+second = first
+
+result = Regexp::Parser::Composition.alternate(first, second,
+                                               on_name_conflict: :rename)
+result = Regexp::Parser::Composition.capture(result, 'outer',
+                                             on_name_conflict: :rename)
+
+match = Regexp.new(result.to_s).match('aa')
+result.extract(match)['word'] # => ["a", nil]
+```
+
+Available operations are `concat`, `alternate`, `repeat`, and `capture`. Name
+conflicts are raised by default; pass `on_name_conflict: :rename` or
+`on_name_conflict: :keep` to handle them explicitly. The returned result exposes
+`capture_map` and `extract` to map captures back to their source fragments.
+
 ## Supported Syntax
 
 The three modules support all the regular expression syntax features of Ruby 1.8,

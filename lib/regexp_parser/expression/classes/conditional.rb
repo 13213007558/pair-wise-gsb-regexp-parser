@@ -9,6 +9,8 @@ module Regexp::Expression
     end
 
     class Condition < Regexp::Expression::Base
+      attr_accessor :composition_target
+
       # Name or number of the referenced capturing group that determines state.
       # Returns a String if reference is by name, Integer if by number.
       def reference
@@ -20,6 +22,8 @@ module Regexp::Expression
     class Branch < Regexp::Expression::Sequence; end
 
     class Expression < Regexp::Expression::Subexpression
+      attr_accessor :composition_target
+
       def <<(exp)
         expressions.last << exp
       end
