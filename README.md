@@ -77,6 +77,26 @@ Regexp::Parser.parse(
 )
 ```
 
+## Composing expressions
+
+Parsed expression trees can be composed without concatenating their source
+strings. This keeps each fragment's option and branch scopes intact and
+recalculates capture numbers and references.
+
+```ruby
+first  = Regexp::Parser.fragment(Regexp::Parser.parse('(?<a>a)\k<a>'), id: 'first')
+second = Regexp::Parser.fragment(Regexp::Parser.parse('(?<b>b)\k<b>'), id: 'second')
+
+root = Regexp::Parser.concat(first, second, on_name_conflict: :rename)
+root.to_re       # => /.../
+root.composition_capture_map.restore(match)
+```
+
+The available operations are `concat`, `alternate`, and `repeat`. Named
+capture conflicts use `on_name_conflict: :raise` (default), `:rename`, or
+`:keep`. With `:rename`, references that used the old name are rewritten too,
+and the returned capture map identifies both the original and final captures.
+
 ## Components
 
 ### Scanner
