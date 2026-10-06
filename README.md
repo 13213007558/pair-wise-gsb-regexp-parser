@@ -1,5 +1,34 @@
 # Regexp::Parser
 
+## Finite language interface
+
+`Regexp::Parser::Language` counts, ranks, enumerates and samples the
+distinct strings matched by a restricted class of regular expressions.
+Strings are counted as a set, so `/a|a/` is the same language as `/a/`.
+
+```ruby
+language = Regexp::Parser::Language.new(/[ab]{2}/)
+
+language.count(2).value     # => 4 (Integer, no floating point)
+language.enumerate(2).value # => ["aa", "ab", "ba", "bb"]
+language.nth(2, 0).value     # => "aa" (zero-based codepoint rank)
+language.sample(2, seed: 1)  # reproducible single sample
+language.samples(2, 100, seed: 1).value
+```
+
+Open character classes need an explicit finite alphabet:
+
+```ruby
+Regexp::Parser::Language.new(/./, alphabet: 'abc')
+```
+
+Backreferences, recursion, lookarounds, conditionals, absence groups,
+`\K`, `\R` and `\X` are rejected. Anchors `\A`, `^`, `\G`, `\z`, `\Z`,
+`$`, `\b` and `\B` are supported with whole-string semantics; the empty
+string is a valid length-zero word. Every query accepts a work `budget:`
+and returns a `Result`; when the budget is exhausted, `complete?` is
+false and no biased random result is generated.
+
 [![Gem Version](https://badge.fury.io/rb/regexp_parser.svg)](http://badge.fury.io/rb/regexp_parser)
 [![Build Status](https://github.com/ammar/regexp_parser/workflows/tests/badge.svg)](https://github.com/ammar/regexp_parser/actions)
 [![Build Status](https://github.com/ammar/regexp_parser/workflows/gouteur/badge.svg)](https://github.com/ammar/regexp_parser/actions)
