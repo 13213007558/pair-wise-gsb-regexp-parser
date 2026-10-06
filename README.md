@@ -494,3 +494,67 @@ Documentation and books used while working on this project.
 ## Copyright
 
 _Copyright (c) 2010-2026 Ammar Ali. See LICENSE file for details._
+_
+_Modifications for the finite-language counting/sampling API are part of
+this distribution._
+
+## Counting, ranking and sampling strings of a regular expression
+
+`Regexp::Parser::FiniteLanguage` treats a regular expression as a **set of
+strings** and answers length-indexed queries over a finite character domain.
+Strings are counted as set elements, so overlapping syntax paths such as
+`a|a` or `(a|a)b` contribute each string only once. Counts use Ruby
+arbitrary-precision integers.
+
+```ruby
+require 'regexp_parser'
+
+FL = Regexp::Parser::FiniteLanguage
+
+lang = FL.new('a|aa', %w[a b])
+lang.count(1).value # => 1  ("a")
+lang.count(2).value # => 1  ("aa")
+lang.nth(2, 0).value # => "aa"  (0-based lexicographic rank)
+lang.sample(3, seed: 42).value # => e.g. "aaa"
+lang.each(1).to_a   # => ["a"]
+```
+
+### Results and budgets
+
+Every query returns a `FiniteLanguage::Result`; call `#value!` to raise when
+incomplete instead of silently getting a biased value:
+
+```ruby
+result = lang.count(40, budget: 1_000)
+result.complete?        # => false
+result.incomplete?      # => true
+result.reason           # => "counting exceeded budget"
+result.value           # => nil (no biased answer)
+result.value!          # raises FiniteLanguage::BudgetExhausted
+```
+
+### Semantics
+
+* Each query fixes an exact length `n`; unbounded quantifiers are harmless
+  because only length-`n` strings are counted.
+* Greedy, reluctant and possessive-independent backtracking modes are not
+  modeled; the language contains every string the pattern can generate.
+  Possessive quantifiers (`a*+`, `a++`, `a?+`) are rejected because they are
+  not a regular language (their result depends on failed backtracking).
+* Empty matches are supported: `count(0)` reports whether the empty string
+  belongs to the language.
+* Anchors: `\A`, `\G` and (non-multiline) `^` mean start-of-string; `\z` is
+  end-of-string; `$` and `\Z` mean end-of-string or the position immediately
+  before one trailing newline for a top-level terminal anchor. Multiline `^`
+  and `$` are rejected.
+* Unsupported features raise `FiniteLanguage::UnsupportedFeature`:
+  backreferences, recursive/conditional subexpressions, lookarounds,
+  `\b`/`\B`, `\K`, absence groups, `\R` and `\X`.
+
+### Uniform sampling
+
+`sample(n, seed:)` uses the exact per-character continuation counts (the
+same DP used by `count`/`nth`) and `Random#rand(Integer)`, so the
+distribution is uniform over **distinct** strings and is reproducible for a
+given `Integer` or `Random` seed. Overlapping branches never double-weight a
+shared result.
