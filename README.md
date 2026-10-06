@@ -318,6 +318,64 @@ end
 _See the traverse.rb and strfregexp.rb files under `lib/regexp_parser/expression/methods`
 for more information on these methods._
 
+### Optimizer
+
+`Regexp::Optimizer` performs conservative, semantics-preserving rewrites of
+Ruby regex source. It does **not** introduce another matching engine: input
+and output are both ordinary Ruby regular expressions.
+
+Two rewrites are attempted, and each is applied only when it can be proven
+locally that it cannot change whether the pattern matches, the matched span,
+or any named/numbered capture:
+
+* making a greedy quantifier possessive (`a+b` -> `a++b`)
+* making a deterministic subexpression atomic
+  (`(?:ab)` -> `(?>ab)`, or `(ab)` -> `(?>(ab))`)
+
+The possessive rewrite requires, among other things, that:
+
+* the quantifier is greedy and repeats at least once (min >= 1),
+* the quantified unit is a fixed-length, non-nullable, deterministic sequence
+  with no internal quantifier or alternative,
+* its possible first character is disjoint from everything the rest of the
+  pattern/branch can start with (including through nullable groups and
+  alternatives), and
+* it is not nested inside another repeating or min-0 quantified group.
+
+Patterns that cannot be analyzed are left completely untouched. This includes
+recursive subexpression calls (`\g<name>`), conditionals, `\K`, inline option
+groups such as `(?i:...)`, case-insensitive patterns, chained quantifiers,
+and unsupported character classes (negated sets, POSIX classes, properties,
+type escapes like `\w`, intersections, ...).
+
+```ruby
+require 'regexp_parser'
+
+result = Regexp::Optimizer.optimize('[ab]+c')
+result.original   # => "[ab]+c"
+result.optimized  # => "[ab]++c"
+
+result.changes.each do |change|
+  # location in the original source
+  puts change.start, change.length
+  # source before/after
+  puts change.before, change.after        # => "+", "++"
+  # the human-readable conditions that prove the rewrite safe
+  puts change.conditions
+end
+
+# Anything that cannot be proven safe is returned unchanged, with the reason.
+result = Regexp::Optimizer.optimize('(b+){2}')
+result.optimized  # => "(b+){2}"
+result.changes    # => [] (this specific quantifier is not safe to rewrite)
+
+Regexp::Optimizer.optimize(/a+b/i).skipped # => "pattern is case-insensitive"
+```
+
+Note that Ruby has no possessive form of interval quantifiers: `{1,2}+` is
+parsed as a chained quantifier equivalent to `(?:a{1,2})+`, so interval
+quantifiers are never rewritten.
+
 ## Supported Syntax
 
 The three modules support all the regular expression syntax features of Ruby 1.8,
