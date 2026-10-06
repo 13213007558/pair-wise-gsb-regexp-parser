@@ -318,6 +318,42 @@ end
 _See the traverse.rb and strfregexp.rb files under `lib/regexp_parser/expression/methods`
 for more information on these methods._
 
+### Optimizer
+
+A conservative, source-to-source optimizer. It does not introduce a matching
+engine; it only rewrites a Ruby pattern into another Ruby pattern when it can
+prove the rewrite cannot change matching, MatchData ranges, named captures or
+backreference behavior.
+
+Two rewrites are performed:
+
+* a greedy quantifier is made possessive when the first character set of its
+  body is disjoint from everything that can follow it (`a*b` -> `a*+b`);
+* a non-capturing group is made atomic when its body is locally
+  backtrack-stable and the same disjointness condition holds
+  (`(?:a|b)c` -> `(?>a|b)c`).
+
+Patterns with recursive subexpression calls (`\g<...>`) are returned
+unchanged. Unsupported constructs (backreferences, assertions at a rewrite
+site, `\K`, conditionals, absence groups, negated/intersected/unbounded
+character classes, `\R`, `\X`, properties, and so on) keep the affected site
+unchanged. Every applied or skipped site is reported with its source offset
+and the proof condition or refusal reason.
+
+```ruby
+require 'regexp_parser'
+
+result = Regexp::Parser::Optimizer.optimize('a*b|(?:a|b)c')
+result.original   # => "a*b|(?:a|b)c"
+result.optimized  # => "a*+b|(?>a|b)c"
+result.changes.each do |change|
+  puts "@#{change.location} #{change.kind}: " \
+       "#{change.source} -> #{change.target} (#{change.proof})"
+end
+result.skipped    # sites left unchanged, with reasons
+result.to_regexp  # => /a*+b|(?>a|b)c/
+```
+
 ## Supported Syntax
 
 The three modules support all the regular expression syntax features of Ruby 1.8,
